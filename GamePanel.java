@@ -13,13 +13,19 @@ public class GamePanel extends JPanel implements ActionListener{
     static final int UNIT_SIZE = 25;
     static final int GAME_UNITS = (SCREEN_WIDTH * SCREEN_HEIGHT)/UNIT_SIZE;
     static final int DELAY = 75;
+
     final int x[] = new int[GAME_UNITS];
     final int y[] = new int[GAME_UNITS];
+
     int bodyParts = 6;
     int applesEaten = 0;
     int totalApples = 3;
     int[] appleX = new int[totalApples];
     int[] appleY = new int[totalApples];
+
+    int slowAppleX;
+    int slowAppleY;
+
     char direction = 'R';
     boolean running = false;
     Timer timer;
@@ -58,6 +64,10 @@ public class GamePanel extends JPanel implements ActionListener{
                 g.fillOval(appleX[i], appleY[i], UNIT_SIZE, UNIT_SIZE);
             }
 
+            //slow apples draw
+            g.setColor(Color.white);
+            g.fillOval(slowAppleX, slowAppleY, UNIT_SIZE, UNIT_SIZE);
+
             //snake draw
             for (int i = 0; i < bodyParts; i++) {
                 if (i == 0) {
@@ -79,12 +89,21 @@ public class GamePanel extends JPanel implements ActionListener{
             gameOver(g);
         }
     }
+    //normal apples
     public void newApple() {
         for (int i = 0; i < totalApples; i++) {
             appleX[i] = random.nextInt((int) (SCREEN_WIDTH / UNIT_SIZE)) * UNIT_SIZE;
             appleY[i] = random.nextInt((int) (SCREEN_HEIGHT / UNIT_SIZE)) * UNIT_SIZE;
         }
     }
+
+    //slow down apples
+    public void newSlowApple() {
+        slowAppleX = random.nextInt((SCREEN_WIDTH / UNIT_SIZE)) * UNIT_SIZE;
+        slowAppleY = random.nextInt((SCREEN_HEIGHT / UNIT_SIZE)) * UNIT_SIZE;
+    }
+
+
     public void move(){
         for(int i = bodyParts; i > 0; i--){
             x[i] = x[i-1];
@@ -108,6 +127,8 @@ public class GamePanel extends JPanel implements ActionListener{
     }
     public void checkApple(){
         for (int i = 0; i < totalApples; i++) {
+
+            //if apple is eaten
             if ((x[0] == appleX[i]) && (y[0] == appleY[i])) {
                 bodyParts += 4;
                 applesEaten++;
@@ -116,6 +137,12 @@ public class GamePanel extends JPanel implements ActionListener{
                 appleY[i] = random.nextInt((int) (SCREEN_HEIGHT / UNIT_SIZE)) * UNIT_SIZE;
 
                 timer.setDelay(timer.getDelay() - 5); //speeding up the game
+            }
+
+            //if SLOW apple is eaten
+            if ((x[0] == slowAppleX) && (y[0] == slowAppleY)) {
+                timer.setDelay(Math.min(200, timer.getDelay() + 4));
+                newSlowApple();
             }
         }
     }
@@ -151,7 +178,34 @@ public class GamePanel extends JPanel implements ActionListener{
         g.setColor(Color.magenta);
         g.setFont(new Font("Ink Free", Font.BOLD, 75));
         FontMetrics metrics2 = getFontMetrics(g.getFont());
-        g.drawString("You are baaad", (SCREEN_WIDTH - metrics2.stringWidth("You are baaad"))/2, (SCREEN_HEIGHT/2) );
+        if(applesEaten <= 4){
+            g.drawString("You are baaad", (SCREEN_WIDTH - metrics2.stringWidth("You are baaad"))/2, (SCREEN_HEIGHT/2) );
+        }else if (applesEaten > 4 && applesEaten <= 10){
+            g.drawString("You are so good!", (SCREEN_WIDTH - metrics2.stringWidth("You are so good!"))/2, (SCREEN_HEIGHT/2) );
+        }else {
+            g.drawString("So easy, right?", (SCREEN_WIDTH - metrics2.stringWidth("So easy, right?"))/2, (SCREEN_HEIGHT/2) );
+        }
+    }
+
+    public void restartGame(){
+        bodyParts = 6;
+        applesEaten = 0;
+        direction = 'R';
+        running = true;
+
+        for (int i = 0; i < bodyParts; i++) {
+            x[i] = 50 - i * UNIT_SIZE;
+            y[i] = 50;
+        }
+
+        if (timer != null) {
+            timer.stop();
+        }
+
+        timer = new Timer(DELAY, this);
+        timer.start();
+
+        repaint();
     }
 
     public void actionPerformed(ActionEvent e){
@@ -186,6 +240,11 @@ public class GamePanel extends JPanel implements ActionListener{
                 case KeyEvent.VK_DOWN:
                     if(direction != 'U'){
                         direction = 'D';
+                    }
+                    break;
+                case KeyEvent.VK_ENTER:
+                    if (!running){
+                        restartGame();
                     }
                     break;
             }
